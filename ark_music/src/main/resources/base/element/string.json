@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "module description"
+    },
+    {
+      "name": "Ark_musicAbility_desc",
+      "value": "description"
+    },
+    {
+      "name": "Ark_musicAbility_label",
+      "value": "label"
+    }
+  ]
+}

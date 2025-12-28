@@ -1,0 +1,50 @@
+{
+  "module": {
+    "name": "ark_music",
+    "type": "entry",
+    "description": "$string:module_desc",
+    "mainElement": "Ark_musicAbility",
+    "deviceTypes": [
+      "phone"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "abilities": [
+      {
+        "name": "Ark_musicAbility",
+        "srcEntry": "./ets/ark_musicability/Ark_musicAbility.ets",
+        "description": "$string:Ark_musicAbility_desc",
+        "icon": "$media:layered_image",
+        "label": "$string:Ark_musicAbility_label",
+        "startWindowIcon": "$media:startIcon",
+        "startWindowBackground": "$color:start_window_background",
+        "exported": true,
+        "skills": [
+          {
+            "entities": [
+              "entity.system.home"
+            ],
+            "actions": [
+              "ohos.want.action.home"
+            ]
+          }
+        ]
+      }
+    ],
+    "extensionAbilities": [
+      {
+        "name": "Ark_musicBackupAbility",
+        "srcEntry": "./ets/ark_musicbackupability/Ark_musicBackupAbility.ets",
+        "type": "backup",
+        "exported": false,
+        "metadata": [
+          {
+            "name": "ohos.extension.backup",
+            "resource": "$profile:backup_config"
+          }
+        ],
+      }
+    ]
+  }
+}

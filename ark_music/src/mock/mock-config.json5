@@ -1,0 +1,5 @@
+{
+  "libark_music.so": {
+    "source": "src/mock/Libark_music.mock.ets"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "ark_music",
+  "version": "1.0.0",
+  "description": "Please describe the basic information.",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "libark_music.so": "file:./src/main/cpp/types/libark_music"
+  }
+}
