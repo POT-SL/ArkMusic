@@ -3,7 +3,7 @@
     z-index: 899;
     top: 0;
     left: 0;
-    height: 100vh;
+    height: calc(100vh - 100px);
     width: auto;
     display: flex;
     transition: transform 0.3s ease; /* 添加过渡效果 */
@@ -11,7 +11,7 @@
 
 .page > div {
     width: 100vw;
-    height: 100vh;
+    height: calc(100vh - 100px);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -36,11 +36,9 @@
 
 .play_controller {
 
-    width: 100vw;
+    width: calc(100vw - 25px);
     height: 150px;
-    top: calc(85% - 75px);
-
-    position: relative;
+    margin-top: 85px;
 
     display: flex;
     justify-content: center;

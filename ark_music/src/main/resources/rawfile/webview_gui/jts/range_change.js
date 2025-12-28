@@ -4,6 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     play_range.addEventListener('input', function() {
         arkts.change_times(play_range.value);
-});
+    });
 
 });

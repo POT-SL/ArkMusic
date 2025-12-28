@@ -1,0 +1,36 @@
+.taskbar {
+
+    position: fixed;
+    z-index: 900;
+    top: calc(100vh - 75px);
+    left: 5vw;
+
+    height: 50px;
+    width: 90vw;
+    background-color: #eaeaea;
+    border-radius: 100px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+
+    transition: transform 0.1s ease;
+
+}
+.taskbar:active {
+    transform: scale(0.9);
+}
+
+.slider {
+    position: absolute;
+    width: 45vw;
+    height: 50px;
+    background-color: rgba(70, 70, 70, 0.5);
+    border-radius: 150px;
+    transition: left 0.3s ease;
+    z-index: 900;
+    top: 50%;
+    transform: translate(0vw,-25px);
+    left: 15%; /* 初始位置在播放图标处 */
+}

@@ -3,6 +3,13 @@ import display from '@ohos.display';
 import emitter from '@ohos.events.emitter';
 import { common } from '@kit.AbilityKit';
 import media from '@ohos.multimedia.media';
+import { image } from '@kit.ImageKit';
+import { fileIo as fs } from '@kit.CoreFileKit';
+import { audio } from '@kit.AudioKit';
+import { AVVolumePanel } from '@kit.AudioKit';
+import { BusinessError} from '@kit.BasicServicesKit';
+import picker from '@ohos.file.picker';
+import util from '@ohos.util';
 
 const PROPORTION = 0.99; // 占屏幕比例
 const SURFACE_W = 0.9; // 表面宽比例
@@ -10,11 +17,6 @@ const SURFACE_H = 1.78; // 表面高比例
 const SET_INTERVAL = 100; // interval间隔时间
 const TIME_ONE = 60000;
 const TIME_TWO = 1000;
-const SPEED_ZERO = 0;
-const SPEED_ONE = 1;
-const SPEED_TWO = 2;
-const SPEED_THREE = 3;
-const SPEED_COUNT = 4;
 let innerEventFalse: emitter.InnerEvent = {
   eventId: 1,
   priority: emitter.EventPriority.HIGH
@@ -27,95 +29,257 @@ let innerEventWH: emitter.InnerEvent = {
   eventId: 3,
   priority: emitter.EventPriority.HIGH
 };
+const TAG = 'MetadataDemo';
 
 // 主程序
 @Entry
 @Component
 struct WebComponent {
 
+  // 自己创建的
+  @State example_list: string[] = []
+  @State list_reg: number = 0
+  @State playing_mode: boolean = false  // false是内置音频，true是外置音频
+  @State storage_list: string[] = []
+  @State storage_list_name: string[] = []
+  @State storage_list_reg: number = 0
+  @State audio_volume: number = 0
+  @State audio_volume_change: boolean = false // 如果是true的话隐藏音量条
+  @State volume_panel_location: number = 1;
+
+  // 这一坨不知道什么变量不要动
   tag: string = 'AVPlayManager';
   private xComponentController: XComponentController = new XComponentController();
   private avPlayer: media.AVPlayer | null = null;
   private surfaceId: string = '';
   private intervalID: number = -1;
-  private seekTime: number = -1;
   private context: common.UIAbilityContext | undefined = undefined;
   private count: number = 0;
-
   @State title: Resource = $r('app.string.Ark_musicAbility_label');
-  @State fileName: string = 'test.flac';
+  @State fileName: string = ''; // 播放的文件名
   @State isSwiping: boolean = false; // 用户滑动过程中
   @State isPaused: boolean = false; // 暂停播放
   @State XComponentFlag: boolean = false;
-  @State speedSelect: number = 0; // 倍速选择
-  @State speedList: Resource[] = [$r('app.string.video_speed_1_0X'), $r('app.string.video_speed_1_25X'), $r('app.string.video_speed_1_75X'), $r('app.string.video_speed_2_0X')];
   @StorageLink('durationTime') durationTime: number = 0; // 视频总时长
   @StorageLink('currentTime') currentTime: number = 0; // 视频当前时间
-  @StorageLink('speedName') speedName: Resource = $r('app.string.video_speed_1_0X');
-  @StorageLink('speedIndex') speedIndex: number = 0; // 倍速索引
   @State surfaceW: number | null = null;
   @State surfaceH: number | null = null;
   @State percent: number = 0;
   @State windowWidth: number = 300;
   @State windowHeight: number = 200;
   @State controller: webview.WebviewController = new webview.WebviewController();
+  @State pixelMap: image.PixelMap | undefined = undefined;
 
+  // 监听系统音频
+  listen_system_volume() {
+    // 构建监听函数
+    let audioManager = audio.getAudioManager();
+    let audioVolumeManager = audioManager.getVolumeManager();
+    // 传入初始音量
+    this.audio_volume = audioVolumeManager.getVolumeByStream(audio.StreamUsage.STREAM_USAGE_MUSIC);
+    this.controller.runJavaScript(`change_volume(${this.audio_volume})`)
+    // 监听
+    audioVolumeManager.on('streamVolumeChange', audio.StreamUsage.STREAM_USAGE_MUSIC, (streamVolumeEvent: audio.StreamVolumeEvent) => {
+      console.info(`Volume level: ${streamVolumeEvent.volume} `);
+      // 将改变的音量传入变量
+      this.audio_volume = streamVolumeEvent.volume
+      if (this.audio_volume_change) {
+        // 如果音量面板打开了，则隐藏默认面板
+        this.volume_panel_location = -1
+      } else {
+        // 如果音量面板关闭了，则显示默认面板
+        this.volume_panel_location = 100
+      }
+      // UI更新
+      this.controller.runJavaScript(`change_volume(${this.audio_volume})`)
+    });
+  }
+
+  // 扫描更新示例音频
+  scan_example_audio() {
+    let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+    const resManager = context.resourceManager;
+    resManager.getRawFileList("example_music", (error: BusinessError, files: Array<string>) => {
+      if (error) {
+        console.error(`扫描失败: ${error.code}, ${error.message}`);
+        return;
+      }
+      // 修改文件列表
+      this.example_list = files;
+
+    });
+  }
+
+  // 播放时间更新 / 格式化
   getDurationTime(): number {
     return this.durationTime;
   }
-
   getCurrentTime(): number {
     return this.currentTime;
   }
-
   timeConvert(time: number): string {
     let min: number = Math.floor(time / TIME_ONE);
     let second: string = ((time % TIME_ONE) / TIME_TWO).toFixed(0);
-    // return `${min}:${(+second < TIME_THREE ? '0' : '') + second}`;
     second = second.padStart(2, '0');
     return `${min}:${second}`;
   }
 
-  async msleepAsync(ms: number): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve(true)
-      }, ms)
-    })
+  // 获取元数据（外部音频）
+  async get_storage_metadata() {
+    if (canIUse('SystemCapability.Multimedia.Media.AVMetadataExtractor')) {
+      try {
+        // 创建AVMetadataExtractor对象。
+        let avMetadataExtractor = await media.createAVMetadataExtractor();
+
+        // 设置fdSrc。
+        avMetadataExtractor.fdSrc = fs.openSync(this.fileName);
+        let file_name = fs.openSync(this.fileName).name
+
+        // 获取元数据（promise模式）。
+        let metadata = await avMetadataExtractor.fetchMetadata();
+        console.info(TAG, `get meta data, mimeType: ${metadata.mimeType}`);
+        console.log(`专辑名：“${metadata.title}”，作者：“${metadata.artist}”\n文件名称：${file_name}}`)
+        // 如果为空
+        if (metadata.title == "" || metadata.artist == "") {
+          // 返回普通名称
+          this.controller.runJavaScript(`set_song_title(['${this.fileName}', '未知艺术家'])`)
+        } else {
+          // 返回完整名称
+          this.controller.runJavaScript(`set_song_title(['${metadata.title}', '${metadata.artist}'])`)
+        }
+
+        try {
+          // 获取专辑封面（promise模式）。
+          this.pixelMap = await avMetadataExtractor.fetchAlbumCover();
+          // 转换为 ArrayBuffer
+          let packOpts: image.PackingOption = { format: "image/jpeg", quality: 90 };
+          let arrayBuffer = await image.createImagePacker().packing(this.pixelMap, packOpts);
+          let uint8Array = new Uint8Array(arrayBuffer);
+          // base64 二重编码
+          let base64 = new util.Base64Helper();
+          let base64Data = base64.encodeSync(uint8Array);
+          let dataURL = `image/jpeg;base64,${base64Data}`;
+          let text_encode = new util.TextEncoder()
+          let encodedData = base64.encodeSync(text_encode.encodeInto(dataURL))
+          // JS 调用
+          this.controller.runJavaScript(`set_song_image('${encodedData}')`);
+        } catch {
+          // 获取失败，返回空
+          this.controller.runJavaScript(`set_song_image('')`);
+        }
+        // 释放资源（promise模式）。
+        avMetadataExtractor.release();
+        console.info(TAG, `release data source success.`);
+      } catch (e) {
+        console.error(TAG + `FetchMetadataFromFdSrc, code is ${e.code}, message is ${e.message}`);
+        // 返回空信息
+        this.controller.runJavaScript(`set_song_title(['${this.fileName}', '未知艺术家'])`)
+        this.controller.runJavaScript(`set_song_image('')`);
+      }
+    }
+  }
+  // 获取元数据（内置音频）
+  async get_example_metadata() {
+    if (canIUse('SystemCapability.Multimedia.Media.AVMetadataExtractor')) {
+      try {
+        // 创建AVMetadataExtractor对象。
+        let avMetadataExtractor: media.AVMetadataExtractor = await media.createAVMetadataExtractor();
+
+        // 设置fdSrc。
+        let context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+        avMetadataExtractor.fdSrc = await context.resourceManager.getRawFd('example_music/' + this.fileName);
+
+        // 获取元数据（promise模式）。
+        let metadata = await avMetadataExtractor.fetchMetadata();
+        console.log(`专辑名：“${metadata.title}”，作者：“${metadata.artist}”`)
+        // 如果为空
+        if (metadata.title == "" || metadata.artist == "") {
+          // 返回普通名称
+          this.controller.runJavaScript(`set_song_title(['${this.fileName}', '未知艺术家'])`)
+        } else {
+          // 返回完整名称
+          this.controller.runJavaScript(`set_song_title(['${metadata.title}', '${metadata.artist}'])`)
+        }
+
+        try {
+          // 获取专辑封面（promise模式）。
+          this.pixelMap = await avMetadataExtractor.fetchAlbumCover();
+          // 转换为 ArrayBuffer
+          let packOpts: image.PackingOption = { format: "image/jpeg", quality: 90 };
+          let arrayBuffer = await image.createImagePacker().packing(this.pixelMap, packOpts);
+          let uint8Array = new Uint8Array(arrayBuffer);
+          // base64 二重编码
+          let base64 = new util.Base64Helper();
+          let base64Data = base64.encodeSync(uint8Array);
+          let dataURL = `image/jpeg;base64,${base64Data}`;
+          let text_encode = new util.TextEncoder()
+          let encodedData = base64.encodeSync(text_encode.encodeInto(dataURL))
+          // JS 调用
+          this.controller.runJavaScript(`set_song_image('${encodedData}')`);
+        } catch {
+          // 获取失败，返回空
+          this.controller.runJavaScript(`set_song_image('')`);
+        }
+
+        // 释放资源（promise模式）。
+        avMetadataExtractor.release();
+        console.info(TAG, `release success.`);
+      } catch (e) {
+        console.error(TAG + `FetchMetadataFromFdSrcByPromise, code is ${e.code}, message is ${e.message}`);
+        // 返回空信息
+        this.controller.runJavaScript(`set_song_title(['${this.fileName}', '未知艺术家'])`)
+        this.controller.runJavaScript(`set_song_image('')`);
+      }
+    }
   }
 
+  // audio注册
   async avSetupAudio() {
     // 通过UIAbilityContext的resourceManager成员的getRawFd接口获取媒体资源播放地址。
     // 返回类型为{fd,offset,length},fd为HAP包fd地址，offset为媒体资源偏移量，length为播放长度。
     if (this.context == undefined) return;
-    let fileDescriptor = await this.context.resourceManager.getRawFd(this.fileName);
-    let avFileDescriptor: media.AVFileDescriptor =
-      { fd: fileDescriptor.fd, offset: fileDescriptor.offset, length: fileDescriptor.length };
+    // 如果是外置模式
+    let avFileDescriptor: media.AVFileDescriptor = { fd: 0 };
+    try {
+      if (this.playing_mode) {
+        const tmp_fd = fs.openSync(this.fileName).fd;
+        avFileDescriptor = {fd: tmp_fd, offset: 0, length: fs.statSync(tmp_fd).size}
+      } else {
+        // 内置模式
+        let fileDescriptor = await this.context.resourceManager.getRawFd('example_music/' + this.fileName);
+        avFileDescriptor = { fd: fileDescriptor.fd, offset: fileDescriptor.offset, length: fileDescriptor.length }
+      }
+    } catch (error) {
+      console.error(`未知错误：${error}`)
+    }
 
     if (this.avPlayer) {
       console.info(`${this.tag}: init avPlayer release2createNew`);
-      this.avPlayer.release();
-      await this.msleepAsync(1500);
+      await this.avPlayer.release();
+      console.log("资源清除完成.")
     }
     // 创建avPlayer实例对象
     this.avPlayer = await media.createAVPlayer();
+
+    if (this.playing_mode) {
+      await this.get_storage_metadata();
+    } else {
+      // 更新元数据
+      await this.get_example_metadata();
+    }
 
     // 创建状态机变化回调函数
     await this.setAVPlayerCallback((avPlayer: media.AVPlayer) => {
       this.percent = avPlayer.width / avPlayer.height;
       this.setVideoWH();
       this.durationTime = this.getDurationTime();
-      setInterval(() => { // 更新当前时间
-        if (!this.isSwiping) {
-          this.currentTime = this.getCurrentTime();
-        }
-      }, SET_INTERVAL);
     });
 
     // 为fdSrc赋值触发initialized状态机上报
     this.avPlayer.fdSrc = avFileDescriptor;
   }
 
+  // 播放 / 暂停 / 跳转 / 上一首 / 下一首
   avPlay(): void {
     console.log('$接收播放')
     if (this.avPlayer) {
@@ -126,7 +290,6 @@ struct WebComponent {
       }
     }
   }
-
   avPause(): void {
     if (this.avPlayer) {
       try {
@@ -137,7 +300,6 @@ struct WebComponent {
       }
     }
   }
-
   async avSeek(seekTime: number): Promise<void> {
     if (this.avPlayer) {
       try {
@@ -149,16 +311,127 @@ struct WebComponent {
       }
     }
   }
-
-  avSetSpeed(speed: number): void {
-    if (this.avPlayer) {
-      try {
-        this.avPlayer.setSpeed(speed);
-        console.info(`${this.tag}: avSetSpeed enum ${speed}`);
-      } catch (e) {
-        console.error(`${this.tag}: avSetSpeed == ${JSON.stringify(e)}`);
+  async last_song() {
+    // 判断播放模式
+    if (this.playing_mode) {
+      // 外置模式
+      console.log('外置模式')
+      // 如果是头
+      if (this.list_reg <= 0) {
+        console.log('到达头端')
+        // 跳转到末端
+        this.list_reg = this.storage_list.length - 1
+      } else {
+        console.log('上一首')
+        // -1
+        this.list_reg -= 1
       }
+      // 重置播放器
+      console.log('重置播放器')
+      await this.reset_all_setting()
+      // 设置播放源
+      console.log('注册播放器')
+      this.fileName = this.storage_list[this.list_reg]
+      // 注册新播放器
+      await this.avSetupAudio();
+      // 播放
+      console.log('完成')
+      this.avPlay()
+    } else {
+      // 内置模式
+      console.log('内置模式')
+      // 如果是头
+      if (this.list_reg <= 0) {
+        console.log('到达头端')
+        // 跳转到末端
+        this.list_reg = this.example_list.length - 1
+      } else {
+        console.log('上一首')
+        // -1
+        this.list_reg -= 1
+      }
+      // 重置播放器
+      console.log('重置播放器')
+      await this.reset_all_setting()
+      // 设置播放源
+      console.log('注册播放器')
+      this.fileName = this.example_list[this.list_reg]
+      // 注册新播放器
+      await this.avSetupAudio();
+      // 播放
+      console.log('完成')
+      this.avPlay()
     }
+  }
+  async next_song() {
+    // 判断播放模式
+    if (this.playing_mode) {
+      // 外置模式
+      console.log('外置模式')
+      // 如果是末尾
+      if (this.list_reg >= this.storage_list.length - 1) {
+        console.log('到达末端')
+        // 计数器重置0
+        this.list_reg = 0
+      } else {
+        console.log('下一首')
+        // +1
+        this.list_reg += 1
+      }
+      // 重置播放器
+      console.log('重置播放器')
+      await this.reset_all_setting()
+      // 设置播放源
+      console.log('注册播放器')
+      this.fileName = this.storage_list[this.list_reg]
+      // 注册新播放器
+      await this.avSetupAudio();
+      // 播放
+      console.log('完成')
+      this.avPlay()
+    } else {
+      // 内置模式
+      console.log('内置模式')
+      // 如果是末尾
+      if (this.list_reg >= this.example_list.length - 1) {
+        console.log('到达末端')
+        // 计数器重置0
+        this.list_reg = 0
+      } else {
+        console.log('下一首')
+        // +1
+        this.list_reg += 1
+      }
+      // 重置播放器
+      console.log('重置播放器')
+      await this.reset_all_setting()
+      // 设置播放源
+      console.log('注册播放器')
+      this.fileName = this.example_list[this.list_reg]
+      // 注册新播放器
+      await this.avSetupAudio();
+      // 播放
+      console.log('完成')
+      this.avPlay()
+    }
+  }
+
+  // 重置播放器
+  async reset_all_setting() {
+    if (this.avPlayer) {
+      console.log('暂停')
+      // 暂停
+      try {
+        await this.avPlayer.pause();
+      } catch {}
+      console.log('重置进度条')
+      // 重置进度条
+      await this.avPlayer.reset();
+      console.log('完成！');
+    }
+    // 重设进度条
+    this.durationTime = 0;
+    this.currentTime = 0;
   }
 
   // 注册avplayer回调函数
@@ -209,24 +482,6 @@ struct WebComponent {
           this.durationTime = this.avPlayer.duration;
           this.currentTime = this.avPlayer.currentTime;
           this.avPlayer.play(); // 调用播放接口开始播放
-          console.info(`${this.tag}:
-            setAVPlayerCallback speedSelect: ${this.speedSelect}, duration: ${this.durationTime}`);
-          if (this.speedSelect != -1) {
-            switch (this.speedSelect) {
-              case SPEED_ZERO:
-                this.avSetSpeed(media.PlaybackSpeed.SPEED_FORWARD_1_00_X);
-                break;
-              case SPEED_ONE:
-                this.avSetSpeed(media.PlaybackSpeed.SPEED_FORWARD_1_25_X);
-                break;
-              case SPEED_TWO:
-                this.avSetSpeed(media.PlaybackSpeed.SPEED_FORWARD_1_75_X);
-                break;
-              case SPEED_THREE:
-                this.avSetSpeed(media.PlaybackSpeed.SPEED_FORWARD_2_00_X);
-                break;
-            }
-          }
           callback(this.avPlayer);
           break;
         case 'playing': // play成功调用后触发该状态机上报
@@ -272,6 +527,20 @@ struct WebComponent {
           }
           this.avPlayer.off('bufferingUpdate')
           AppStorage.setOrCreate('currentTime', this.durationTime);
+          // 如果是最后一首，则暂停
+          if (this.playing_mode) {
+            // 如果未达到末端
+            if (this.list_reg < this.storage_list.length - 1) {
+              // 下一首
+              this.controller.runJavaScript('click_next()')
+            }
+          } else {
+            // 如果未达到末端
+            if (this.list_reg < this.example_list.length - 1) {
+              // 下一首
+              this.controller.runJavaScript('click_next()')
+            }
+          }
           break;
         case 'released':
           console.info(`${this.tag}: setAVPlayerCallback released called.`);
@@ -296,6 +565,21 @@ struct WebComponent {
     });
   }
 
+  // 音量面板UI组件
+  @Builder
+  CreateAVVolumePanel() {
+    AVVolumePanel({
+      volumeLevel: this.audio_volume,
+      volumeParameter: {
+        position: {
+          x: this.volume_panel_location,
+          y: this.volume_panel_location
+        }
+      }
+    })
+  }
+
+  // 未研究的石山不要动
   aboutToAppear() {
     this.windowWidth = display.getDefaultDisplaySync().width;
     this.windowHeight = display.getDefaultDisplaySync().height;
@@ -303,7 +587,6 @@ struct WebComponent {
     this.surfaceH = this.surfaceW / SURFACE_H;
     this.context = getContext(this) as common.UIAbilityContext;
   }
-
   aboutToDisappear() {
     if (this.avPlayer == null) {
       console.info(`${this.tag}: avPlayer has not init aboutToDisappear`);
@@ -318,13 +601,12 @@ struct WebComponent {
     });
     emitter.off(innerEventFalse.eventId);
   }
-
   onPageHide() {
+    console.log('进入后台了')
     this.avPause();
     this.isPaused = false;
     this.controller.runJavaScript(`set_button_status(${this.isPaused})`)
   }
-
   onPageShow() {
     emitter.on(innerEventTrue, (res: emitter.EventData) => {
       if (res.data) {
@@ -347,7 +629,6 @@ struct WebComponent {
       }
     });
   }
-
   setVideoWH(): void {
     if (this.percent >= 1) { // 横向视频
       this.surfaceW = Math.round(this.windowWidth * PROPORTION);
@@ -357,7 +638,6 @@ struct WebComponent {
       this.surfaceW = Math.round(this.surfaceH * this.percent);
     }
   }
-
   @Builder
   CoverXComponent() {
     XComponent({
@@ -372,10 +652,12 @@ struct WebComponent {
       .width(`${this.surfaceW}px`)
   }
 
+  // 这里开始是UI界面
   build() {
     Column() {
       Column() {
         this.CoverXComponent()
+        this.CreateAVVolumePanel()
       }
       .width(0)
       .height(0)
@@ -383,14 +665,20 @@ struct WebComponent {
         src: $rawfile("webview_gui/index.html"),
         controller: this.controller
       })
-      // 注入webview代码
+      // 在这里添加构建
         .onControllerAttached(() => {
-          try {
 
+          // 扫描歌曲
+          this.scan_example_audio();
+
+          // 注册框架
+          this.surfaceId = this.xComponentController.getXComponentSurfaceId();
+          // 注册webview
+          try {
             // 注册js函数接口
             this.controller.registerJavaScriptProxy(
-
               {
+
                 // 播放 / 暂停
                 song_play: () => {
                   this.isPaused = !this.isPaused;
@@ -405,20 +693,140 @@ struct WebComponent {
                   };
                   this.controller.runJavaScript(`set_button_status(${this.isPaused})`);
                 },
-
+                // 进度条更改
                 change_times: (play_range: string) => {
                   this.avSeek(parseInt(play_range));
+                },
+                // 获取内置音乐列表
+                get_example_audio: () => {
+                  // 把列表丢过去
+                  return this.example_list
+                },
+                // 更改播放音乐(内置音乐)
+                change_example_songs: async (name: string) => {
+                  // 更改模式
+                  this.playing_mode = false
+                  // 查询列表
+                  try {
+                    const tmp = this.example_list.indexOf(name);
+                    // 设置序号
+                    this.list_reg = tmp;
+                  } catch {
+                    // 找不到，那没办法了，自动调0
+                    this.list_reg = 0;
+                  }
+                  console.log('重置播放器')
+                  // 重置播放器
+                  await this.reset_all_setting()
+                  console.log('设置播放源头')
+                  // 设置播放源
+                  this.fileName = this.example_list[this.list_reg]
+                  console.log('注册播放器')
+                  // 注册新播放器
+                  await this.avSetupAudio();
+                  console.log('完成，跳转...')
+                  // 跳转
+                  this.controller.runJavaScript('back_to_play()');
+                  // 播放
+                  this.avPlay()
+                },
+                // 添加外部音频
+                local_add: async () => {
+                  // 创建选择容器
+                  const audioSelectOptions = new picker.AudioSelectOptions();
+                  const audioPicker = new picker.AudioViewPicker();
+                  // 选择
+                  await audioPicker.select(audioSelectOptions).then((audioSelectResult: Array<string>) => {
+                    if (audioSelectResult.length != 0) {
+                      console.log(`音频选择结果（路径）: ${audioSelectResult}`)
+                      this.storage_list = audioSelectResult;
+                    } else {
+                      console.log('音频选择取消。')
+                    }
+                  })
+                },
+                // 获取外部音乐列表
+                get_storage_audio: () => {
+                  try {
+                    // 处理音频（获取音频名）
+                    let tmp: string[] = [];
+                    for (const i of this.storage_list) {
+                      tmp.push(fs.openSync(i).name)
+                    }
+                    // 列表存一份
+                    this.storage_list_name = tmp;
+                    // 检查如果长度不一肯定有问题
+                    if (this.storage_list.length != this.storage_list_name.length) {
+                      console.error("??列表长度不一高度不一")
+                      console.error(`storage_list: ${this.storage_list}`)
+                      console.error(`storage_list_name: ${this.storage_list_name}`)
+                    }
+                    // 把列表丢过去
+                    return tmp;
+                  } catch {
+                    return [];
+                  }
+                },
+                // 更改播放音乐(外部音乐)
+                change_storage_songs: async (name: string) => {
+                  // 更改模式
+                  this.playing_mode = true
+                  // 查询列表
+                  try {
+                    const tmp = this.storage_list_name.indexOf(name);
+                    // 设置序号
+                    this.list_reg = tmp;
+                  } catch {
+                    this.list_reg = 0;
+                  }
+                  console.log('重置播放器')
+                  // 重置播放器
+                  await this.reset_all_setting()
+                  console.log('设置播放源头')
+                  // 设置播放源
+                  this.fileName = this.storage_list[this.list_reg]
+                  console.log(`选择了：${this.list_reg}, ${this.fileName}`)
+                  console.log('注册播放器')
+                  // 注册新播放器
+                  await this.avSetupAudio();
+                  console.log('完成，跳转...')
+                  // 跳转
+                  this.controller.runJavaScript('back_to_play()');
+                  // 播放
+                  this.avPlay()
+                },
+                // 上一首
+                last_song: async () => {
+                  await this.last_song();
+                },
+                // 下一首
+                next_song: async () => {
+                  await this.next_song();
+                },
+                // 我要更改音量了
+                change_voice_frame: (status: boolean) => {
+                  this.audio_volume_change = status;
+                },
+                // 更改音量
+                change_voice_volume: (volume: string) => {
+                  let tmp = parseInt(volume);
+                  console.log(`音量: ${tmp}`);
+                  this.audio_volume = tmp;
+                  this.CreateAVVolumePanel();
                 },
 
               },
               "arkts",
-              ["song_play", "change_times"]
+              [
+                "song_play", "change_times", 'get_example_audio', 'change_example_songs', 'last_song', 'next_song',
+                "local_add", "get_storage_audio", "change_storage_songs", "change_voice_frame", "change_voice_volume",
+              ]
             )
 
             // 控制js函数
             setInterval(() => {
               this.controller.runJavaScript(`set_song_playing(['${this.timeConvert(this.currentTime)}', '${this.timeConvert(this.durationTime)}', ${this.currentTime}, ${this.durationTime}])`)
-            }, 1000);
+            }, SET_INTERVAL);
 
           } catch (error) {
             console.error(`Error Code: ${error}.`)
@@ -428,10 +836,14 @@ struct WebComponent {
           console.log("Page loading started.");
         })
         .onPageEnd(() => {
-          this.surfaceId = this.xComponentController.getXComponentSurfaceId();
+          // 监听音量
+          this.listen_system_volume();
+          // 载入0号内置歌曲
+          this.fileName = this.example_list[0]
           this.avSetupAudio();
           console.log("Page loading end. Welcome!");
         })
+        .zoomAccess(false)
     }
   }
 }

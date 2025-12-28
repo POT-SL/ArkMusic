@@ -2,80 +2,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ArkMusicLite</title>
-    <link rel="stylesheet" href="css/body.css">
+    <title>ArkMusicLite2</title>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+    <link rel="stylesheet" href="css/taskbar.css">
     <link rel="stylesheet" href="css/page.css">
     <link rel="stylesheet" href="css/play_button.css">
     <link rel="stylesheet" href="css/song_playing.css">
+    <link rel="stylesheet" href="css/vol_control.css">
     <link rel="stylesheet" href="css/title.css">
-    <link rel="stylesheet" href="css/time_display.css">
+    <link rel="stylesheet" href="css/head.css">
+    <link rel="stylesheet" href="css/song_bar.css">
+    <link rel="stylesheet" href="css/list.css">
+    <link rel="stylesheet" href="css/welcome.css">
+    <link rel="stylesheet" href="css/back_btn.css">
+    <link rel="stylesheet" href="css/album_display.css">
 </head>
 <body>
 
     <!--页面-->
-    <div class="page">
+        <div class="page">
 
-        <!--主播放页面-->
-        <div>
-            <!--标题-->
-            <div class="title"><p id="title">陌上花开</p></div>
-            <!--副标题-->
-            <div class="sub_title"><p id="sub_title">洛天依</p></div>
-            
-            <!--进度滑块-->
-            <input type="range" id="song_playing" name="song_playing" value="0"/>
+            <!--主播放页面-->
+            <div>
 
-            <!--播放器控件-->
-            <div class="play_controller">
-                <button id="btn_play"><img src="img/play_play.svg" style="width: 50%; height: 50%; margin-left: 15%;"></button>
+                <!--专辑封面-->
+                <div id="album_display"><img src="img/CD.png"></div>
+
+                <!--标题-->
+                <div class="title"><p id="title">未知音频</p></div>
+                <!--副标题-->
+                <div class="sub_title"><p id="sub_title">未知艺术家</p></div>
+                
+                <!--音量大小控件-->
+                <div class="vol_control">
+                    <!--滑动框架-->
+                    <div class="vol_control_flex_frame">
+                        <!--进度滑块-->
+                        <input type="range" id="vol_control" name="vol_control" min="0", max="15", value="4"/>
+                        <!--进度展示条-->
+                        <div id="vol_control_screen"></div>
+                        <!--未展开前的图片-->    
+                        <img src="img/vol_control.svg">
+                    </div>
+                </div>
+
+                <!--播放器控件-->
+                <div class="play_controller">
+                    <button id="btn_last"><img src="img/play_last.svg" style="width: 50%; height: 50%; margin-right: 10%;"></button>
+                    <button id="btn_play"><img src="img/play_play.svg" style="width: 50%; height: 50%; margin-left: 15%;"></button>
+                    <button id="btn_next"><img src="img/play_next.svg" style="width: 50%; height: 50%; margin-left: 10%;"></button>
+                </div>
+
+                <!--进度条框架-->
+                <div class="song_playing">
+
+                    <!--进度滑块-->
+                    <input type="range" id="song_playing" name="song_playing" value="0"/>
+                    <!--进度展示条-->
+                    <div id="range_screen"></div>
+
+                    <!--时间显示-->
+                    <p id="time_playing" style="top: -4.5px;">00:00</p>
+                    <!--时长-->
+                    <p id="time_long" style="right: 0;">00:00</p>
+
+                </div>
+
             </div>
 
-            <!--时间显示-->
-            <div class="time_display" style="left: 25px;"><p id="time_playing">00:00</p></div>
-            <!--时长-->
-            <div class="time_display" style="left: calc(100vw - 75px);"><p id="time_long">00:00</p></div>
+            <!--个人中心页面-->
+            <div>
+
+                <!--个人头像-->
+                <div class="head"><img src="img/head.jpg"></div>
+
+                <!--栏目-->
+                <div class="song_bar">
+                    <div class="song_bar_img">
+                        <img src="img/local_file.svg" style="width: 50px; height: 50px;">
+                        <img src="img/music_example.svg" style="width: 50px; height: 50px;">
+                    </div>
+                    <div class="song_bar_text">
+                        <p>外部音频</p>
+                        <p>示例音频</p>
+                    </div>
+                    
+                </div>
+
+            </div>
+            <!--外部音频页面-->
+            <div style="height: 100vh;">
+
+                <!--返回按钮-->
+                <button id="back"></button>
+
+                <!--滑块-->
+                <div class="list_gui">
+
+                    <!--介绍页面-->
+                    <div class="welcome">
+                        <img src="img/local_file_gray.svg">
+                        <p>外部音频</p>
+                    </div>
+
+                    <!--歌曲列表-->
+                    <div id="local_list" class="list">
+                    </div>
+
+                    <!--添加页面-->
+                    <div class="local_add_gui">
+                        <button id="local_add"></button>
+                        <p>点击添加音乐</p>
+                    </div>
+
+                    <!--占位的-->
+                    <div style="width: 100%; height: 100px;"></div>
+
+                </div>
+                
+            </div>
+            <!--示例音频界面-->
+            <div id="favourite_gui" style="height: 100vh;">
+
+                <!--返回按钮-->
+                <button id="back"></button>
+
+                <!--滑块-->
+                <div class="list_gui">
+
+                    <!--介绍页面-->
+                    <div class="welcome">
+                        <img src="img/music_example_gray.svg">
+                        <p style="padding-top: 5px">示例音频</p>
+                    </div>
+
+                    <!--歌曲列表-->
+                    <div id="favourite_list" class="list">
+                    </div>
+
+                    <!--占位的-->
+                    <div style="width: 100%; height: 100px;"></div>
+
+                </div>
+
+            </div>
 
         </div>
-
+        <!--控制栏-->
+        <div class="taskbar">
+            <!--播放主页图标-->
+            <img id="play-icon" src="img/taskbar_play.svg" style="width: 35px; height: 35px; z-index: 901; cursor: pointer;">
+            <img id="owner-icon" src="img/taskbar_owner.svg" style="width: 35px; height: 35px; z-index: 901; cursor: pointer;">
+        <div id="slider" class="slider"></div>
     </div>
 
-<script src="jts/play_botton.js"></script>
-<script src="jts/range_change.js"></script>
-
-<!-- ArkTS接口脚本 -->
-<script>
-
-    // 绑定元素
-    const time_playing = document.getElementById('time_playing');
-    const time_long = document.getElementById('time_long');
-    const play_range = document.getElementById('song_playing');
-
-    // 改变按钮
-    function set_button_status(status) {
-        console.log('接收到状态：' + status);
-        if (status) {
-            btn_play.innerHTML = '<img src="img/play_stop.svg" style="width: 50%; height: 50%">';
-        } else {
-            btn_play.innerHTML = '<img src="img/play_play.svg" style="width: 50%; height: 50%; margin-left: 15%;">';
-        }
-    }
+    <script src="jts/local_add.js"></script>
+    <script src="jts/page_switch.js"></script>
+    <script src="jts/play_botton.js"></script>
+    <script src="jts/range_change.js"></script>
+    <script src="jts/vol_control.js"></script>
+    <script src="jts/get_songs.js"></script>
     
-    // 改变播放进度
-    function set_song_playing(arr) {
+    <!--arkts接口-->
+    <script>
 
-        console.log('接收到播放进度：' + arr);
-       
-        // 更新时间
-        time_playing.innerText = arr[0];;
-        time_long.innerText = arr[1];
-        // 更新播放进度条
-        play_range.max = arr[3];
-        play_range.value = arr[2];
-        arkts.get_playing_times_raw(play_range.value);
+        // 绑定元素
+        const time_playing = document.getElementById('time_playing');
+        const time_long = document.getElementById('time_long');
+        const play_range = document.getElementById('song_playing');
+        const range_screen = document.getElementById('range_screen');
+        const title = document.getElementById('title');
+        const sub_title = document.getElementById('sub_title');
+        const album_img = document.getElementById('album_display');
+        const pageContainer = document.querySelector('.page');
+        const slider = document.getElementById('slider');
 
-    }
+        // 改变播放进度
+        function set_song_playing(arr) {
+            
+            // 更新时间
+            time_playing.innerText = arr[0];;
+            time_long.innerText = arr[1];
+            // 更新播放进度条
+            play_range.max = arr[3];
+            play_range.value = arr[2];
+            range_screen.style.width = (play_range.value / play_range.max * 100) + '%';
 
-</script>
+        }
+
+        // 修改标题
+        function set_song_title(arr) {
+            console.log('接收到标题：' + arr);
+            title.innerText = arr[0];
+            sub_title.innerText = arr[1];
+        }
+
+        // 更改封面
+        function set_song_image(byteString) {
+            try {
+                // 将数字数组字符串转换回字符，得到外层的base64
+                let byteArrayStr = byteString.replace(/[\[\]]/g, '');
+                let byteNumbers = byteArrayStr.split(',').map(num => parseInt(num.trim()));
+                
+                // 将数字数组转换回base64字符串
+                let outerBase64 = '';
+                for (let i = 0; i < byteNumbers.length; i++) {
+                    outerBase64 += String.fromCharCode(byteNumbers[i]);
+                }
+                
+                // 解码外层base64，得到真正的Data URL定义
+                let innerContent = atob(outerBase64);
+                
+                // 分离MIME类型和数字数组部分
+                let [mimeTypePartWithBase64, numbersPart] = innerContent.split(';base64,');
+                let mimeType = mimeTypePartWithBase64.replace(';base64', '');
+                
+                // 将数字字符串转换回真正的base64
+                let numberArray = numbersPart.split(',').map(num => parseInt(num.trim()));
+                let realBase64 = '';
+                for (let i = 0; i < numberArray.length; i++) {
+                    realBase64 += String.fromCharCode(numberArray[i]);
+                }
+                
+                // 解码base64为二进制数据
+                let binaryData = atob(realBase64);
+                
+                // 转换为Uint8Array
+                let uint8Array = new Uint8Array(binaryData.length);
+                for (let i = 0; i < binaryData.length; i++) {
+                    uint8Array[i] = binaryData.charCodeAt(i);
+                }
+                
+                // 创建Blob对象
+                let blob = new Blob([uint8Array], { type: mimeType });
+                let blobUrl = URL.createObjectURL(blob);
+                
+                const img = new Image();
+                
+                img.onload = function() {
+                    // 加载成功，清空div并添加新图片
+                    album_img.innerHTML = '';
+                    album_img.appendChild(img);
+                    // 使用完成后释放blob URL以节省内存
+                    img.onload = null; // 清除事件处理器
+                };
+                
+                img.onerror = function() {
+                    // 加载失败，清空div并添加默认图片
+                    album_img.innerHTML = '';
+                    const defaultImg = new Image();
+                    defaultImg.src = 'img/CD.png';
+                    album_img.appendChild(defaultImg);
+                    // 释放失败的blob URL
+                    URL.revokeObjectURL(blobUrl);
+                };
+                
+                // 设置src
+                img.src = blobUrl;
+                
+            } catch (error) {
+                // 发生错误，添加默认图片
+                album_img.innerHTML = '';
+                const defaultImg = new Image();
+                defaultImg.src = 'img/CD.png';
+                album_img.appendChild(defaultImg);
+            }
+        }
+
+        // 跳转主界面
+        function back_to_play() {
+            // 跳转回主页
+            pageContainer.className = 'page play-active';
+            // 状态栏归位
+            slider.style.left = '0vw';
+            pageContainer.className = 'page play-active';
+        }
+    
+        // 模拟点击 - 下一首
+        function click_next() {
+            console.log('自动-下一首');
+            btn_next.click();
+        }
+    
+    </script>
 
 </body>
 </html>

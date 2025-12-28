@@ -1,0 +1,17 @@
+.head {
+    width: 75px;
+    height: 75px;
+    border-radius: 150px;
+    background-color: #eaeaea;
+    margin-top: 10vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.head img {
+    width: 75px;
+    height: 75px;
+    border-radius: 150px;
+    object-fit: cover;
+}

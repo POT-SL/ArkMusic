@@ -6,7 +6,6 @@
     border-radius: 300px;
     border: none;
     cursor: pointer;
-    position: absolute;
     outline: none;
 
     transition: transform 0.1s ease;
@@ -22,10 +21,8 @@
     height: 75px;
     background-color: #eaeaea;
     border-radius: 300px;
-    margin-right: 65%;
     border: none;
     cursor: pointer;
-    position: absolute;
     outline: none;
 
     transition: transform 0.1s ease;
@@ -41,10 +38,8 @@
     height: 75px;
     background-color: #eaeaea;
     border-radius: 300px;
-    margin-left: 65%;
     border: none;
     cursor: pointer;
-    position: absolute;
     outline: none;
 
     transition: transform 0.1s ease;
