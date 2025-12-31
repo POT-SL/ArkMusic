@@ -1,0 +1,45 @@
+.list_button {
+
+    width: 90vw;
+    height: 50px;
+    border: none;
+    border-radius: 15px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    background-color: rgba(178, 178, 178, 0.2);
+
+    display: flex;
+    align-items: center;
+
+    transition: transform 0.1s ease;
+
+}
+.list_button:active {
+    transform: scale(0.9);
+}
+.list_button img {
+    height: 80%;
+    aspect-ratio: 1;
+
+}
+.list_button div {
+
+    width: calc(90vw - (50px * 0.8) - 50px);
+    height: auto;
+    margin-left: 15px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+
+}
+.list_button p {
+    font-weight: 450;
+    font-size: 15px;
+    color: rgb(100, 100, 100);
+    white-space: nowrap;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    position: relative;
+    transition: transform 0.3s ease;
+}

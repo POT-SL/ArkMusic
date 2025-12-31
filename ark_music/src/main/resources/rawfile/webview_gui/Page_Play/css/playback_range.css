@@ -24,7 +24,6 @@
     background: transparent; /* 隐藏背景 */
     opacity: 0; /* 完全隐藏滑块 */
     height: 100%; /* 让滑块可以响应点击 */
-    z-index: 10; /* 确保滑块在最上层 */
 }
 .play_page_playback_frame input::-webkit-slider-runnable-track {
     /* 隐藏滑块背景 */

@@ -3,12 +3,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // 处理主标题
     const mainTitleContainer = document.querySelector('.play_page_title');
     const mainTitleScroll = document.getElementById('play_page_title_scroll');
-    const mainTitleElement = document.getElementById('title');
+    const mainTitleElement = document.getElementById('page_play_title');
     
     // 处理副标题
     const subTitleContainer = document.querySelector('.play_page_sub_title');
     const subTitleScroll = document.getElementById('play_page_sub_title_scroll');
-    const subTitleElement = document.getElementById('sub_title');
+    const subTitleElement = document.getElementById('page_play_sub_title');
     
     // 初始化检查
     checkAndSetupScrolling(mainTitleContainer, mainTitleScroll, mainTitleElement);

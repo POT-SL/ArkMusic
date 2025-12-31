@@ -20,12 +20,12 @@
 <body>
     
     <!-- 专辑封面 -->
-    <div id="meta_img" class="play_page_meta_img"><img src="file/CD.png"></div>
+    <div id="page_play_meta_img" class="play_page_meta_img"><img src="file/CD.png"></div>
     
     <!-- 标题 -->
-    <div class="play_page_title"><div id="play_page_title_scroll"><p id="title">未知音频</p></div></div>
+    <div class="play_page_title"><div id="play_page_title_scroll"><p id="page_play_title">未知音频</p></div></div>
     <!-- 副标题 -->
-    <div class="play_page_sub_title"><div id ="play_page_sub_title_scroll"><p id="sub_title">未知艺术家</p></div></div>
+    <div class="play_page_sub_title"><div id="play_page_sub_title_scroll"><p id="page_play_sub_title">未知艺术家</p></div></div>
 
     <!-- 音量控制器 -->
     <div class="vol_control">
@@ -42,29 +42,34 @@
 
     <!-- 控制框架 -->
     <div class="play_controller">
-        <button id="btn_last"><img src="file/play_last.svg" style="width: 50%; height: 50%; margin-right: 10%;"></button>
-        <button id="btn_play"><img src="file/play_play.svg" style="width: 50%; height: 50%; margin-left: 15%;"></button>
-        <button id="btn_next"><img src="file/play_next.svg" style="width: 50%; height: 50%; margin-left: 10%;"></button>
+        <button onclick="post_last_song()" class="play_button"><img src="file/play_last.svg" style="width: 50%; height: 50%; margin-right: 10%;"></button>
+        <button onclick="post_play_change()" id="play_page_play_change" class="play_button" style="width: 100px; height: 100px;"><img src="file/play_play.svg" style="width: 50%; height: 50%; margin-left: 15%;"></button>
+        <button onclick="post_next_song()" class="play_button"><img src="file/play_next.svg" style="width: 50%; height: 50%; margin-left: 10%;"></button>
     </div>
     
     <!--进度条-->
     <div class="play_page_playback_frame">
 
         <!--进度滑块-->
-        <input type="range" id="playback_control" min="0", max="60000", value="30000"/>
+        <input type="range" id="play_page_playback_control" min="0" max="60000" value="30000"/>
         <!--进度展示条-->
         <div id="play_page_playback_screen"></div>
-
         <!--时间显示-->
-        <p id="current_time" style="left: 0;">00:00</p>
+        <p id="play_page_current_time" style="left: 0;">00:00</p>
         <!--时长-->
-        <p id="total_time" style="right: 0;">00:00</p>
+        <p id="play_page_duration_time" style="right: 0;">00:00</p>
 
     </div>
 
 
+    <script src="js/bound.js"></script>
     <script src="js/vol_control.js"></script>
     <script src="js/title_scroll.js"></script>
+    <script src="js/play_change.js"></script>
+    <script src="js/update_time.js"></script>
+    <script src="js/set_meta.js"></script>
+    <script src="js/song_seek.js"></script>
+
 
 </body>
 </html>

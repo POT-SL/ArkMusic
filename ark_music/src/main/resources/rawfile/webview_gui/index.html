@@ -16,8 +16,15 @@
     
     <!-- 主界面框架（可滑动） -->
     <div id="main_gui">
+
         <!-- 播放页 -->
-        <iframe src="Page_Play/index.html" frameborder="0"></iframe>
+        <iframe src="Page_Play/index.html" id="page_play"></iframe>
+
+        <!-- 文件页 -->
+        <iframe src="Page_Files/index.html" id="'page_files"></iframe>
+        <!-- 文件页（所有文件） -->
+        <iframe src="Page_Files/Page_All_Files/index.html" id="page_all_files"></iframe>
+
     </div>
 
     <!-- 音乐控制栏 -->
@@ -28,15 +35,15 @@
             <div id=meta_img class="music_bar_meta_img"><img src="file/CD.png"></div>
             <div id="music_bar_title"><div id="music_bar_title_scroll"><p id="title">未知音频</p></div></div>
             <!-- 播放三大金刚 -->
-            <button id="play_last" class="play_button" style="right: 80px;"><img src="file/play_last.svg" style="margin-right: 5px;"></button>
-            <button id="play_change" class="play_button" style="right: 45px;"><img src="file/play_change.svg" style="margin-left: 5px;"></button>
-            <button id="play_next" class="play_button" style="right: 10px;"><img src="file/play_next.svg" style="margin-left: 5px;"></button>
+            <button onclick="post_last_song()" class="play_button" style="right: 80px;"><img src="file/play_last.svg" style="margin-right: 5px;"></button>
+            <button onclick="post_play_change()" id="play_change" class="play_button" style="right: 45px;"><img src="file/play_change.svg" style="margin-left: 5px;"></button>
+            <button onclick="post_next_song()" id="play_next" class="play_button" style="right: 10px;"><img src="file/play_next.svg" style="margin-left: 5px;"></button>
             <!-- 进度滑块框架 -->
             <div class="music_bar_playback_frame">
                 <!-- 进度滑块 -->
-                <input type="range" id="playback_control" min="0", max="60000", value="30000"/>
+                <input type="range" id="music_bar_playback_control" min="0" max="60000" value="30000"/>
                 <!-- 进度展示条 -->
-                <div id="music_bar_playback_screen"></div>
+                <div id="music_bar_playback_screen" class="music_bar_playback_screen"></div>
             </div>
             
          </div>
@@ -52,9 +59,14 @@
     </div>
     
     <!-- js -->
-    <script src="js/song_bar.js"></script>
+    <script src="js/bound.js"></script>
     <script src="js/taskbar.js"></script>
-    <script src="js/music_bar_title_scroll.js"></script>
-    <script src="js/music_bar_playback.js"></script>
+    <script src="js/ai_music_bar_title_scroll.js"></script>
+    <script src="js/arkts.js"></script>
+    <script src="js/page_switch.js"></script>
+    <script src="js/post_play_event.js"></script>
+    <script src="js/child_queue.js"></script>
+    <script src="js/set_meta.js"></script>
+    <script src="js/song_seek.js"></script>
 </body>
 </html>

@@ -1,9 +1,3 @@
-// 绑定按钮
-const vol_control_button = document.querySelector('.vol_control');
-const vol_control_flex_frame = document.querySelector('.vol_control div');
-const vol_control_input = document.getElementById('vol_control');
-const vol_control_screen = document.getElementById('vol_control_screen');
-
 // 按下事件
 vol_control_button.addEventListener('touchstart', function(e) {
     if (vol_control_button.style.width === '40px') {
@@ -16,7 +10,7 @@ vol_control_button.addEventListener('touchend', function(e) {
     vol_control_button.style.transform = 'translateX(-110px) scale(1)';
     vol_control_button.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
     vol_control_flex_frame.style.transform = 'translateX(0px)';
-    arkts.change_voice_frame(true);
+    arkts.change_volume(-1);
 });
 // 移开（取消）事件
 vol_control_button.addEventListener('touchcancel', function(e) {
@@ -31,16 +25,23 @@ document.addEventListener('click', function(e) {
         vol_control_button.style.transform = 'translateX(0px) scale(1)';
         vol_control_button.style.boxShadow = 'none';
         vol_control_flex_frame.style.transform = 'translateX(-167px)';
-        arkts.change_voice_frame(false);
+        arkts.change_volume(-2);
     }
 });
 
 // 音量滑动事件
 vol_control_input.addEventListener('input', function() {
-    arkts.change_voice_volume(vol_control_input.value);
+    arkts.change_volume(vol_control_input.value);
 });
 
 // arkts接口
+
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'change_volume') {
+        change_volume(event.data.arg1)
+    }
+}, false);
+
 function change_volume(vol) {
     console.log('Changing volume to:', vol);
     vol_control_input.value = vol;

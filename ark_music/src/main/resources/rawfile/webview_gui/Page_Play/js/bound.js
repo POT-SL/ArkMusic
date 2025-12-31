@@ -1,0 +1,13 @@
+const page_play_meta_img = document.getElementById('page_play_meta_img');
+const page_play_title = document.getElementById('page_play_title');
+const page_play_sub_title = document.getElementById('page_play_sub_title');
+const vol_control_button = document.querySelector('.vol_control');
+const vol_control_flex_frame = document.querySelector('.vol_control div');
+const vol_control_input = document.getElementById('vol_control');
+const vol_control_screen = document.getElementById('vol_control_screen');
+const play_page_play_change = document.getElementById('play_page_play_change');
+const play_page_duration_time = document.getElementById('play_page_duration_time');
+const play_page_current_time = document.getElementById('play_page_current_time');
+const play_page_playback_control = document.getElementById('play_page_playback_control');
+const play_page_playback_screen = document.getElementById('play_page_playback_screen');
+play_page_playback_screen.style.width = '0';
